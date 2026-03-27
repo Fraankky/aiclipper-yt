@@ -1,0 +1,57 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.hypothesis/
+.tox/
+.nox/
+
+# Build and packaging artifacts
+build/
+dist/
+wheels/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Coverage and test outputs
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Logs and local runtime files
+*.log
+*.pid
+*.seed
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local data/runtime artifacts
+data/
+static/assets/
+
+# Keep project documentation tracked; only ignore generated docs output
+docs/_build/
+site/
