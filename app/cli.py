@@ -279,10 +279,11 @@ def main() -> None:
             cache_data = json.loads(cache_path.read_text())
             # Handle both old format (list) and new format (dict with segments and language_info)
             if isinstance(cache_data, dict) and "segments" in cache_data:
-                segments = cache_data["segments"]
+                raw_segments = cache_data["segments"]
+                segments = raw_segments if isinstance(raw_segments, list) else []
                 detected_language = cache_data.get("language_info", detected_language)
             else:
-                segments = cache_data  # Old format, just a list
+                segments = cache_data if isinstance(cache_data, list) else []
             log("OK", f"Loaded {len(segments)} segments from cache")
         else:
             # Fall back to minimal segments covering clip ranges
@@ -396,10 +397,11 @@ def main() -> None:
         cache_data = json.loads(cache_path.read_text())
         # Handle both old format (list) and new format (dict with segments and language_info)
         if isinstance(cache_data, dict) and "segments" in cache_data:
-            segments = cache_data["segments"]
+            raw_segments = cache_data["segments"]
+            segments = raw_segments if isinstance(raw_segments, list) else []
             detected_language = cache_data.get("language_info", detected_language)
         else:
-            segments = cache_data  # Old format, just a list
+            segments = cache_data if isinstance(cache_data, list) else []
         log("OK", f"Loaded {len(segments)} segments from cache")
     else:
         segments, detected_language = transcribe(
