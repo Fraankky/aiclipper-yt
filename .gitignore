@@ -59,4 +59,8 @@ site/
 
 # Reference repo (not part of our code)
 ai-clipper-id/
-docs
+docs/
+
+PRD.md
+TASKLIST.md
+TEKNIKAL.md

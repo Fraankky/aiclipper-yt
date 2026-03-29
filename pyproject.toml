@@ -33,6 +33,7 @@ ignore = []
 [tool.ruff.lint.per-file-ignores]
 "app/utils.py" = ["E501"]
 "app/llm/fix_clips.py" = ["E501"]
+"app/llm/prompts.py" = ["E501"]
 "app/cli.py" = ["E501"]
 
 [tool.ruff.format]
