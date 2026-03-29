@@ -1,165 +1,117 @@
-# AIClip App
+# AI Clipper App
 
-Backend service untuk workflow **AI Campaign Clip** berbasis FastAPI.
+AI-powered video clipping tool. Input video panjang → otomatis klip pendek siap pakai untuk TikTok/Reels/Shorts.
 
-## Status
+Pipeline architecture adopted from [ai-clipper-id](https://github.com/kira-id/ai-clipper-id) + **Layout Mode System**.
 
-Project ini masih tahap awal (Phase 0: Project Initialization).
-Saat ini fokus pada fondasi struktur repository, konfigurasi dasar, dan bootstrap server.
+## Features
 
-## Tech Stack (awal)
+- 🎬 **Auto Transcription** — faster-whisper (GPU/CPU auto, VAD, batched, word_timestamps)
+- 🧠 **AI Clip Extraction** — LLM analyzes transcript, auto-decides best clips (max 72)
+- 🇮🇩 **Indonesian Optimized** — noise/filler/duplicate filter tuned for Bahasa Indonesia
+- 📊 **Smart Scoring** — 5 dimensions: hook, insight, retention, emotion, clarity
+- 📱 **Layout Mode System** — original, letterbox, center_crop_9_16, gaussian_blur, auto_magic
+- 💬 **ASS Karaoke Subtitles** — word-by-word highlight with `\kf` tag
+- 🔌 **Multi-LLM** — OpenRouter (free), Anthropic, OpenAI, Ollama
+- ⚡ **Caching** — transcript & clips cached, skip re-processing on re-run
 
-- Python 3.14
-- FastAPI
-- Uvicorn
-- Pydantic + pydantic-settings
-- Ruff (lint + format)
+## Quick Start
 
-## Struktur Direktori
+```bash
+# Install
+pip install faster-whisper openai anthropic requests opencv-python-headless
 
-```/dev/null/tree.txt#L1-24
+# (Optional) GPU support
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+
+# Set API key
+export OPENROUTER_API_KEY=sk-...
+
+# Run
+python main.py video.mp4
+python main.py video.mp4 --model large-v3 --layout gaussian_blur
+python main.py video.mp4 --min 15 --max 90 --max-clips 50
+```
+
+## Project Structure
+
+```
 aiclip-app/
 ├── app/
-│   ├── api/
-│   │   ├── routes/
-│   │   └── schemas/
-│   ├── core/
-│   ├── models/
-│   ├── prompts/
-│   ├── repositories/
-│   ├── services/
-│   ├── workers/
-│   ├── config.py
-│   ├── constants.py
-│   ├── logging.py
-│   └── main.py
-├── data/
+│   ├── cli.py              # CLI orchestration
+│   ├── transcription.py    # faster-whisper wrapper
+│   ├── prefilter.py        # noise/duplicate/music filter
+│   ├── extraction.py       # ffmpeg clip extraction
+│   ├── postprocess.py      # subtitle + title + layout mode
+│   ├── subtitles.py        # ASS karaoke generation
+│   ├── layout.py           # Layout Mode System (5 modes)
+│   ├── utils.py            # logging, constants, ffmpeg detection
+│   ├── llm/
+│   │   ├── backends.py     # OpenRouter, Anthropic, OpenAI, Ollama
+│   │   ├── analysis.py     # clip finding, chunking, scoring
+│   │   ├── fix_clips.py    # translate, dedup, caption fix
+│   │   └── prompts.py      # prompt templates
+│   ├── api/                # FastAPI routes (web interface)
+│   ├── core/               # database, config
+│   ├── models/             # SQLAlchemy models
+│   ├── services/           # business logic
+│   └── workers/            # background jobs
+├── clips/                  # Output clips
 ├── docs/
-├── scripts/
-├── static/
-│   └── assets/
-├── tests/
-├── .env.example
-├── pyproject.toml
-└── requirements.txt
+│   ├── PRD.md
+│   ├── TEKNIKAL.md
+│   ├── TASKLIST.md
+│   └── prompts.md
+├── main.py
+├── requirements.txt
+└── pyproject.toml
 ```
 
-## Prerequisites
+## Output
 
-- Python **3.14** ter-install
-- `pip` aktif
-- (Opsional) virtual environment (`.venv`)
-
-## Setup Lokal
-
-1. Buat virtual environment:
-
-```/dev/null/setup.sh#L1-1
-python -m venv .venv
+```
+clips/{video_stem}/
+├── clips.json               # Metadata (rank, score, hook, caption, topic, title)
+├── rank01_Title.mp4         # Raw clip
+└── rank01_Title_final.mp4   # Post-processed (subtitle + layout)
 ```
 
-2. Aktifkan virtual environment:
+## CLI Arguments
 
-```/dev/null/activate.sh#L1-2
-# macOS/Linux
-source .venv/bin/activate
+| Arg | Default | Description |
+|-----|---------|-------------|
+| `video` | required | Input video path |
+| `--model` | turbo | Whisper model (tiny/base/small/medium/large-v3/turbo) |
+| `--lang` | id | Language (id/en/none=auto) |
+| `--min` | 15 | Min clip duration (seconds) |
+| `--max` | 180 | Max clip duration (seconds) |
+| `--max-clips` | 72 | Max number of clips |
+| `--min-score` | 55 | Min clip_score to keep |
+| `--layout` | original | Layout mode |
+| `--subtitles/--no-subtitles` | on | ASS subtitles |
+| `--subtitle-position` | lower | Subtitle position (center/upper/lower) |
+| `--output` | clips | Output directory |
+
+## LLM Backend Priority
+
+1. OpenRouter (`OPENROUTER_API_KEY`) — default free model
+2. Anthropic (`ANTHROPIC_API_KEY`)
+3. OpenAI (`OPENAI_API_KEY`)
+4. Ollama (local, no key)
+
+## Scoring
+
+```
+clip_score = hook×0.30 + insight×0.25 + retention×0.20 + emotion×0.15 + clarity×0.10
 ```
 
-```/dev/null/activate.ps1#L1-2
-# Windows PowerShell
-.venv\Scripts\Activate.ps1
-```
+## Docs
 
-3. Install dependencies:
+- `docs/PRD.md` — Product requirements
+- `docs/TEKNIKAL.md` — Technical design
+- `docs/TASKLIST.md` — Implementation phases
+- `docs/prompts.md` — LLM prompt templates
 
-```/dev/null/install.sh#L1-1
-pip install -r requirements.txt
-```
+## License
 
-4. Buat file environment dari template:
-
-```/dev/null/env-copy.sh#L1-1
-cp .env.example .env
-```
-
-> Di Windows CMD bisa pakai:
-> `copy .env.example .env`
-
-## Menjalankan Server
-
-Jalankan FastAPI dev server:
-
-```/dev/null/run.sh#L1-1
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-## Endpoint Dasar
-
-Setelah server hidup:
-
-- Root: `GET /`
-- Health: `GET /health`
-- Swagger UI: `GET /docs`
-- ReDoc: `GET /redoc`
-
-Contoh cek health:
-
-```/dev/null/curl.sh#L1-1
-curl http://127.0.0.1:8000/health
-```
-
-Expected response:
-
-```/dev/null/health.json#L1-3
-{
-  "status": "ok"
-}
-```
-
-## Lint & Format
-
-Project menggunakan Ruff via `pyproject.toml`.
-
-- Cek lint:
-
-```/dev/null/lint.sh#L1-1
-ruff check .
-```
-
-- Auto-fix lint issues:
-
-```/dev/null/lint-fix.sh#L1-1
-ruff check . --fix
-```
-
-- Format code:
-
-```/dev/null/format.sh#L1-1
-ruff format .
-```
-
-## Konfigurasi Environment
-
-Variabel awal tersedia di `.env.example`, termasuk:
-
-- App (`APP_*`)
-- API (`API_PREFIX`, `CORS_ALLOW_ORIGINS`)
-- Database (`DATABASE_URL`)
-- Storage (`DATA_DIR`, `STATIC_DIR`, `ASSETS_DIR`)
-- AI provider (`OPENROUTER_*`)
-- Pipeline (`FFMPEG_BIN`, `WHISPER_MODEL`, dll)
-- Worker (`JOB_*`)
-- Security (`SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`)
-
-> Untuk production, wajib ganti nilai sensitif seperti `SECRET_KEY`.
-
-## Roadmap Implementasi
-
-Rencana implementasi detail ada di:
-
-- `docs/TASKLIST.md`
-
-## Catatan
-
-- README ini adalah starter docs.
-- Akan terus diupdate seiring progres phase berikutnya (config, database, workflow, AI pipeline, dan UI).
+Internal project.

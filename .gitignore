@@ -50,8 +50,13 @@ Thumbs.db
 
 # Local data/runtime artifacts
 data/
-static/assets/
+clips/
+.cache/
 
-# Keep project documentation tracked; only ignore generated docs output
+# Generated docs
 docs/_build/
 site/
+
+# Reference repo (not part of our code)
+ai-clipper-id/
+docs
