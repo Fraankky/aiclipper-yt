@@ -5,6 +5,9 @@ anthropic
 requests
 opencv-python-headless
 
+# Download
+yt-dlp
+
 # Web (for future web UI)
 fastapi>=0.115.0,<1.0.0
 uvicorn[standard]>=0.30.0,<1.0.0

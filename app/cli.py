@@ -11,6 +11,7 @@ import sys
 import time
 from pathlib import Path
 
+from app.downloader import download_video, is_url
 from app.extraction import _get_video_duration, extract_clips
 from app.llm.analysis import find_clips
 from app.llm.fix_clips import fix_and_improve_clips, translate_subtitle_words
@@ -170,6 +171,11 @@ def main() -> None:
     ap.add_argument("--save-transcript", action="store_true", help="Save full transcript JSON")
     ap.add_argument("--api-key", default=None, help="API key (overrides env vars)")
     ap.add_argument("--llm-model", default=None, help="Override LLM model name for OpenRouter")
+    ap.add_argument(
+        "--download-dir",
+        default=None,
+        help="Directory for downloaded videos when using URL input (default: .cache/ai-video-clipper/downloads)",
+    )
 
     # ── Post-processing options ──────────────────────────────────────────
     ap.add_argument(
@@ -203,7 +209,17 @@ def main() -> None:
 
     args = ap.parse_args()
     lang = None if args.lang.lower() == "none" else args.lang
-    video = Path(args.video)
+
+    # ── Resolve input: URL or local file ────────────────────────────────
+    if is_url(args.video):
+        try:
+            downloaded_path = download_video(args.video, output_dir=args.download_dir)
+        except ValueError as exc:
+            log("ERROR", str(exc))
+            sys.exit(1)
+        video = Path(downloaded_path)
+    else:
+        video = Path(args.video)
 
     # ── Example mode: skip to extraction ─────────────────────────────────
     if args.example:
